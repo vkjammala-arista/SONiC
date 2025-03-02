@@ -29,15 +29,15 @@ Frame Loss Ratio (FLR) is a key performance metric used to measure the percentag
 ## 2 Requirements
 ### 2.1 Functional Requirements
   This HLD is to   
-  - enhance the current "show interfaces counters fec-stats" to include "Observed FLR" and "Predicted FLR" as new columns.
+  - enhance the current "show interfaces counters fec-stats" to include observed and predicted FEC FLR statistics as new columns.
   - Add FEC FLR per interface into Redis DB for telemetry streaming.
   - Calculate the FEC FLR at the same interval as the PORT_STAT poll rate which is 1 sec.
 
 ### 2.2 CLI Requirements
 
 The existing "show interfaces counters fec-stats" will be enhanced to include two additional columns for FLR.  
- - Observed FEC FLR  
- - Predicted FEC FLR
+ - OBSERVED_FEC_FLR
+ - PREDICTED_FEC_FLR (Phase 2)
 
 ## 3 Architecture Design
 
@@ -57,7 +57,7 @@ There are no changes in the current Sonic Architecture.
 
    + portstat.py:
 
-     The portstat command with -f , which representing the cli "show interfaces counters fec-stats" will enhanced to add two new columns, Observed_FLR and Predicted_FLR. 
+     The portstat command with -f , which representing the cli "show interfaces counters fec-stats" will be enhanced to add two new columns, OBSERVED_FEC_FLR and PREDICTED_FEC_FLR. 
 
 
 ### 4.1 Assumptions
@@ -97,9 +97,11 @@ No change in the SAI API. No new SAI object accessed.
 
 ```
 Step 1: calcuate observed FLR
+    OBSERVED_FEC_FLR = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
 
-    Observed FEC FLR = (SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES) / (SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES + SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES + SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0)
-
+    where, Uncorrectable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last
+	   Correctable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last +
+				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 Step 2: the following data will be updated and its latest value stored in the COUNTER_DB, RATES table after each iteraction
 
