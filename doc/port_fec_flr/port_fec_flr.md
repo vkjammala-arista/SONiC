@@ -99,8 +99,8 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last |NEW, RW |number |Total number of uncorrected codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last |NEW, RW |number |Total number of corrected codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last |NEW, RW |number |Total number of codewordswith 0 symbol errors |
-|COUNTER_DB |RATES |OBSERVED_FLR |New, RW| floating |calculated observed FEC FLR |  
-|COUNTER_DB |RATES |PREDICTED_FLR |New, RW| floating |calulated predicted FEC FLR |  
+|COUNTER_DB |RATES |OBSERVED_FEC_FLR |New, RW| floating |calculated observed FEC FLR |  
+|COUNTER_DB |RATES |PREDICTED_FEC_FLR |New, RW| floating |calulated predicted FEC FLR |  
 
 
 ### 4.3 SAI API
