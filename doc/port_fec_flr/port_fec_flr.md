@@ -38,10 +38,12 @@ This document provides information about the implementation of Port Forward Erro
 
 ### 1 Overview
 Frame Loss Ratio (FLR) is a key performance metric used to measure the percentage of lost frames relative to the total transmitted frames over a network link.
+
 FLR is expressed as,
 	FLR = (Total Transmitted Frames - Total Received Frames) / Total Transmitted Frames
 
 Based on the data available on receiver device, computing Forward Error Correction (FEC) FLR which estimates frame loss based on the number of uncorrected FEC codewords is the best alternative.
+
 	FEC FLR = Uncorrectable FEC codewords / Total FEC codewords Received
 
 ## 2 Requirements
