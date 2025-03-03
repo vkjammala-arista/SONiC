@@ -1,6 +1,20 @@
-# FEC FLR estimation support in SONiC#
+# FEC FLR estimation support in SONiC #
 
 ## Table of Content 
+- [Revision](#revision)
+- [Scope](#scope)
+- [Definitions/Abbreviations](#abbreviations)
+- [1 Overview](#1-overview)
+- [2 Requirements](#2-requirements)
+  - [2.1 Functional Requirements](#2.1-functional-requirements)
+  - [2.2 CLI Requirements](#2.2-cli-requirements)
+- [3 Architecture Design](#3-architecture-design)
+- [4 High level design](#4-high-level-design)
+  - [4.1 Assumptions](#41-assumptions)
+  - [4.2 SAI counters used](#42-sai-counters-used)
+  - [4.3 SAI API](#43-sai-api)
+  - [4.4 Calculation formulas](#44-calculation-formulas)
+- [5 Sample output](#5-sample-output)
 
 ### Revision  
 
@@ -17,6 +31,7 @@ This document provides the information about the implementation of Port Forward 
  | Term    |  Definition / Abbreviation                                            |
  |---------|-----------------------------------------------------------------------|
  | FEC     | Forward Error Correction  |
+ | FLR     | Frame Loss Ratio  |
  | Frame   | Size of each FEC block.  
  | Symbol  | Part of the FEC structure which the error detection and correction base on.  
  | RS-FEC  | Reed Solomon Forward Error correction, RS-544 = 5440 total size , RS-528 = 5280 total size  
@@ -24,7 +39,7 @@ This document provides the information about the implementation of Port Forward 
  | PAM4    | Pulse Amplitude Modulation 4 level encoding  
 
 ### 1 Overview
-Frame Loss Ratio (FLR) is a key performance metric used to measure the percentage of lost frames relative to the total transmitted frames over a network link. Since receiver device won't have access to sender-side statistics, using Forward Error Correction (FEC) FLR which estimates frame loss based on the number of uncorrected FEC codewords  is the best alternative.
+Frame Loss Ratio (FLR) is a key performance metric used to measure the percentage of lost frames relative to the total transmitted frames over a network link. Since receiver device won't have access to sender-side statistics, using Forward Error Correction (FEC) FLR which estimates frame loss based on the number of uncorrected FEC codewords is the best alternative.
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
@@ -41,23 +56,23 @@ The existing "show interfaces counters fec-stats" will be enhanced to include tw
 
 ## 3 Architecture Design
 
-There are no changes in the current Sonic Architecture.
+There are no changes to the current SONiC Architecture.
 
 ## 4 High-Level Design
 
  * SWSS changes:
    + port_rates.lua
 
-      Enhance to collect and compute the FLR on each port at the same port state collection interval. It is currently at 1 second.
+      Enhance to collect and compute the FEC FLR on each port at the same port state collection interval. It is currently at 1 second.
 
-     - Access the counter_db for counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES, and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0.
+     - Access the COUNTER_DB for counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES, and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0.
      - Store the computed FEC FLR and previous redis counter values back to the redis DB.
 
  * Utilities Common changes:
 
    + portstat.py:
 
-     The portstat command with -f , which representing the cli "show interfaces counters fec-stats" will be enhanced to add two new columns, OBSERVED_FEC_FLR and PREDICTED_FEC_FLR. 
+     The portstat command with -f, which representing the cli "show interfaces counters fec-stats" will be enhanced to add two new columns, OBSERVED_FEC_FLR and PREDICTED_FEC_FLR. 
 
 
 ### 4.1 Assumptions
