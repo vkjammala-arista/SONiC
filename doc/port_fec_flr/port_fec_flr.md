@@ -120,7 +120,7 @@ Interleaving is a process to rearrange codeword symbols so as to spread bursts o
 
 With interleaving factor incorporated, FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 2, 4 etc)
 
-For X=2, FLR can be approximated to, FEC FLR = 2.4125 * CER
+For X=2, FLR can be approximated to, FEC FLR = 2.4125 * CER <br>
 For X=4, FLR can be approximated to, FEC FLR = 4.95 * CER
 
 ### 4.5 Calculation Formulas
