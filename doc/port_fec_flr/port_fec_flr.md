@@ -32,6 +32,7 @@ This document provides information about the implementation of Port Forward Erro
  |---------|-----------------------------------------------------------------------|
  | FEC     | Forward Error Correction  |
  | FLR     | Frame Loss Ratio  |
+ | CER     | Codeword Error  Ratio  |
  | Frame   | Size of each FEC block |
  | Symbol  | Part of the FEC structure which the error detection and correction is based on |
  | RS-FEC  | Reed Solomon Forward Error correction, RS-544 = 5440 total size , RS-528 = 5280 total size | 
@@ -44,7 +45,11 @@ FLR is expressed as,
 
 Based on the data available on receiver device, computing Forward Error Correction (FEC) FLR which estimates frame loss based on the number of uncorrected FEC codewords is the best alternative.
 
-	FEC FLR = Uncorrectable FEC codewords / Total FEC codewords Received
+	Codeword Error Ratio(CER) = Uncorrectable FEC codewords / Total FEC codewords Received
+
+FEC FLR can be approximated to CER. Since FEC FLR is based on uncorrectable codewords, it approximates frame loss rather than providing a 1:1 mapping.
+
+Overview on FEC: FEC is a technique used to detect and correct a certain number of errors in transmitted data without the need for retransmission. For high speed ethernet, FEC RS-544 is more prevalant and has ability to detect upto 30 symbol errors and correct upto 15 symbol errors.
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
@@ -110,40 +115,53 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 
 No change in the SAI API. No new SAI object accessed.
 
+### 4.4 Considering interleaving factor
+Interleaving is a process to rearrange codeword symbols so as to spread bursts of errors over multiple code-words that can be corrected by ECCs like FEC. An interleaving factor of 4 means that symbols from 4 different FEC codewords are transmitted in a round-robin fashion over the physical medium.
 
-### 4.4 Calculation Formulas
+With interleaving factor incorporated, FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 2, 4 etc)
+
+For X=2, FLR can be approximated to, FEC FLR = 2.4125 * CER
+For X=4, FLR can be approximated to, FEC FLR = 4.95 * CER
+
+### 4.5 Calculation Formulas
 
 ```
-Step 1: calcuate FEC FLR per poll interval (currently 1s)
-    FEC_FLR = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
+Step 1: calcuate CER per poll interval (currently 1s)
+    CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
 
     where, Uncorrectable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last
 	   Correctable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last +
 				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
-Step 2: the following data will be updated and its latest value stored in the COUNTER_DB, RATES table after each iteraction
+Step 2: calculate FEC FLR considering interleaving factor (X)
+    If X=2, FEC_FLR = 2.4125 * CER
+    else if X=4, FEC_FLR = 4.95 * CER
+
+
+Step 3: the following data will be updated and its latest value stored in the COUNTER_DB, RATES table after each iteraction
 
     FEC_FLR, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 ```
+
 ## 5 Sample Output
 ```
 root@ctd615:/usr/local/lib/python3.11/dist-packages/utilities_common#  portstat -f
       IFACE    STATE    FEC_CORR    FEC_UNCORR    FEC_SYMBOL_ERR    FEC_PRE_BER    FEC_POST_BER    FEC_FLR
 -----------  -------  ----------  ------------  ----------------  -------------  --------------  ---------
-  Ethernet0        U           0             0                 0    1.48e-20       0.00e+00        0.00e+00
-  Ethernet8        U           0             0                 0    1.98e-19       0.00e+00        0.00e+00
- Ethernet16        U           0             0                 0    1.77e-20       0.00e+00        0.00e+00
- Ethernet24        U           0             0                 0    4.36e-19       0.00e+00        0.00e+00
- Ethernet32        U           0             0                 0    1.93e-19       0.00e+00        0.00e+00
- Ethernet40        U           1             0                 1    2.77e-18       0.00e+00        0.00e+00
- Ethernet48        U           0             0                 0    8.33e-23       0.00e+00        0.00e+00
- Ethernet56        U           0             0                 0    1.48e-55       0.00e+00        0.00e+00
- Ethernet64        U           0             0                 0    9.88e-32       0.00e+00        0.00e+00
- Ethernet72        U           0             0                 0    4.97e-22       0.00e+00        0.00e+00
- Ethernet80        U           0             0                 0    4.10e-19       0.00e+00        0.00e+00
- Ethernet88        U           0             0                 0    3.84e-19       0.00e+00        0.00e+00
- Ethernet96        U           0             0                 0    4.77e-20       0.00e+00        0.00e+00
+  Ethernet0        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+  Ethernet8        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet16        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet24        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet32        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet40        U           1             0                 1    0.00e+00       0.00e+00        0.00e+00
+ Ethernet48        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet56        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet64        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet72        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet80        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet88        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
+ Ethernet96        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
 ```
 
 ## 6 Unit Test cases
