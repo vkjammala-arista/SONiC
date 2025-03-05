@@ -114,10 +114,11 @@ No change in the SAI API. No new SAI object accessed.
 ### 4.4 FEC interleaving 
 With FEC interleaving factor incorporated, FEC FLR is expressed as
 
-	FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 0, 2, 4 etc)
+	FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 1, 2, 4 etc)
 
-For X=2, FEC FLR = 2.4125 * CER <br>
-For X=4, FEC FLR = 4.95 * CER
+For X=1 (no interleaving), FEC_FLR = CER
+For X=2, FEC_FLR = 2.4125 * CER <br>
+For X=4, FEC_FLR = 4.95 * CER
 
 ### 4.5 Calculation Formulas
 
@@ -131,7 +132,7 @@ Step 1: calculate CER per poll interval (currently 1s)
 				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 Step 2: calculate FEC FLR considering interleaving factor (X)
-    If X=0, FEC_FLR = CER
+    If X=1, FEC_FLR = CER
     If X=2, FEC_FLR = 2.4125 * CER
     If X=4, FEC_FLR = 4.95 * CER
 
