@@ -1,4 +1,4 @@
-# FEC FLR estimation support in SONiC #
+# FEC FLR support in SONiC #
 
 ## Table of Content 
 - [Revision](#revision)
@@ -41,9 +41,11 @@ Frame Loss Ratio (FLR) is a key performance metric used to measure the percentag
 FLR is expressed as,
 	FLR = (Total Transmitted Frames - Total Received Frames) / Total Transmitted Frames
 
-Based on the available Forward Error Correction (FEC) data, receiver device can estimate frame loss in terms of number of uncorrected FEC codewords. For large scale traffic it's reasonable to approximate FEC FLR with Codeword Error Ratio (CER) which is expressed as
+Based on the Forward Error Correction (FEC) data, receiver device can compute Codeword Error Ratio (CER) which is expressed as
 
 	CER = Uncorrectable FEC codewords / Total FEC codewords Received
+
+and FEC FLR can be estimated from CER.
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
