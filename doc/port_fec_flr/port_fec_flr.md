@@ -34,9 +34,6 @@ This document provides information about the implementation of Port Forward Erro
  | CER     | Codeword Error Ratio  |
  | FEC     | Forward Error Correction  |
  | FLR     | Frame Loss Ratio  |
- | Frame   | Size of each FEC block |
- | RS-FEC  | Reed Solomon Forward Error correction, RS-544 = 5440 total size , RS-528 = 5280 total size | 
- | Symbol  | Part of the FEC structure which the error detection and correction is based on |
 
 ### 1 Overview
 Frame Loss Ratio (FLR) is a key performance metric used to measure the percentage of lost frames relative to the total transmitted frames over a network link.
