@@ -6,14 +6,15 @@
 - [Definitions/Abbreviations](#abbreviations)
 - [1 Overview](#1-overview)
 - [2 Requirements](#2-requirements)
-  - [2.1 Functional Requirements](#2.1-functional-requirements)
-  - [2.2 CLI Requirements](#2.2-cli-requirements)
+  - [2.1 Functional Requirements](#21-functional-requirements)
+  - [2.2 CLI Requirements](#22-cli-requirements)
 - [3 Architecture Design](#3-architecture-design)
 - [4 High level design](#4-high-level-design)
   - [4.1 Assumptions](#41-assumptions)
   - [4.2 SAI counters used](#42-sai-counters-used)
   - [4.3 SAI API](#43-sai-api)
-  - [4.4 Calculation formulas](#44-calculation-formulas)
+  - [4.4 FEC interleaving](#44-fec-interleaving)
+  - [4.5 Calculation formulas](#45-calculation-formulas)
 - [5 Sample output](#5-sample-output)
 
 ### Revision  
@@ -81,7 +82,7 @@ There are no changes to the current SONiC Architecture.
 
    + portstat.py:
 
-     The portstat command with -f, which representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR column. 
+     The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR column. 
 
 
 ### 4.1 Assumptions
@@ -115,7 +116,7 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 
 No change in the SAI API. No new SAI object accessed.
 
-### 4.4 Considering interleaving factor
+### 4.4 FEC interleaving 
 Interleaving is a process to rearrange codeword symbols so as to spread bursts of errors over multiple code-words that can be corrected by ECCs like FEC. An interleaving factor of 4 means that symbols from 4 different FEC codewords are transmitted in a round-robin fashion over the physical medium.
 
 With interleaving factor incorporated, FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 2, 4 etc)
@@ -146,7 +147,7 @@ Step 3: the following data will be updated and its latest value stored in the CO
 
 ## 5 Sample Output
 ```
-root@ctd615:/usr/local/lib/python3.11/dist-packages/utilities_common#  portstat -f
+admin@qsd220:~$ portstat -f
       IFACE    STATE    FEC_CORR    FEC_UNCORR    FEC_SYMBOL_ERR    FEC_PRE_BER    FEC_POST_BER    FEC_FLR
 -----------  -------  ----------  ------------  ----------------  -------------  --------------  ---------
   Ethernet0        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
@@ -154,7 +155,7 @@ root@ctd615:/usr/local/lib/python3.11/dist-packages/utilities_common#  portstat 
  Ethernet16        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
  Ethernet24        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
  Ethernet32        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
- Ethernet40        U           1             0                 1    0.00e+00       0.00e+00        0.00e+00
+ Ethernet40        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
  Ethernet48        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
  Ethernet56        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
  Ethernet64        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
