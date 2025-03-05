@@ -27,16 +27,16 @@
 
 This document provides information about the implementation of Port Forward Error Correction (FEC) Frame Loss Ratio (FLR) estimation in SONiC.
 
-### Definitions/Abbreviations 
+### Definitions/Abbreviations
 
  | Term    |  Definition / Abbreviation                                            |
  |---------|-----------------------------------------------------------------------|
+ | CER     | Codeword Error Ratio  |
  | FEC     | Forward Error Correction  |
  | FLR     | Frame Loss Ratio  |
- | CER     | Codeword Error  Ratio  |
  | Frame   | Size of each FEC block |
- | Symbol  | Part of the FEC structure which the error detection and correction is based on |
  | RS-FEC  | Reed Solomon Forward Error correction, RS-544 = 5440 total size , RS-528 = 5280 total size | 
+ | Symbol  | Part of the FEC structure which the error detection and correction is based on |
 
 ### 1 Overview
 Frame Loss Ratio (FLR) is a key performance metric used to measure the percentage of lost frames relative to the total transmitted frames over a network link.
@@ -44,24 +44,20 @@ Frame Loss Ratio (FLR) is a key performance metric used to measure the percentag
 FLR is expressed as,
 	FLR = (Total Transmitted Frames - Total Received Frames) / Total Transmitted Frames
 
-Based on the data available on receiver device, computing Forward Error Correction (FEC) FLR which estimates frame loss based on the number of uncorrected FEC codewords is the best alternative.
+Based on the available Forward Error Correction (FEC) data, receiver device can estimate frame loss in terms of number of uncorrected FEC codewords. For large scale traffic it's reasonable to approximate FEC FLR with Codeword Error Ratio (CER) which is expressed as
 
-	Codeword Error Ratio(CER) = Uncorrectable FEC codewords / Total FEC codewords Received
-
-FEC FLR can be approximated to CER. Since FEC FLR is based on uncorrectable codewords, it approximates frame loss rather than providing a 1:1 mapping.
-
-Overview on FEC: FEC is a technique used to detect and correct a certain number of errors in transmitted data without the need for retransmission. For high speed ethernet, FEC RS-544 is more prevalant and has ability to detect upto 30 symbol errors and correct upto 15 symbol errors.
+	CER = Uncorrectable FEC codewords / Total FEC codewords Received
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
-  This HLD is to   
-  - enhance the current "show interfaces counters fec-stats" to include FEC FLR statistics as a new column.
-  - Add FEC FLR per interface into Redis DB for telemetry streaming.
+  This HLD is to
   - Calculate the FEC FLR at the same interval as the PORT_STAT poll rate which is 1 sec.
+  - Add FEC FLR per interface into Redis DB for telemetry streaming.
+  - Enhance the current "show interfaces counters fec-stats" to include FEC FLR statistics as a new column.
 
 ### 2.2 CLI Requirements
 
-The existing "show interfaces counters fec-stats" will be enhanced to include FEC FLR column.  
+The existing "show interfaces counters fec-stats" will be enhanced to include FEC_FLR column.
  - FEC_FLR
 
 ## 3 Architecture Design
@@ -82,17 +78,17 @@ There are no changes to the current SONiC Architecture.
 
    + portstat.py:
 
-     The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR column. 
+     The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR column.
 
 
 ### 4.1 Assumptions
 
 SAI provide access to each interface the following attributes
-- SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, which represents the number of uncorrectable FEC codewords. 
+- SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, which represents the number of uncorrectable FEC codewords.
   - return not support if its not working for an interface
-- SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES, which represents the number of correctable FEC codewords. 
+- SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES, which represents the number of correctable FEC codewords.
   - return not support if its not working for an interface
-- SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0, which represents the number of codewords with 0 symbol errors.
+- SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0, which represents the number of codewords without any errors.
   - return not support if its not working for an interface
 
 
@@ -100,16 +96,16 @@ SAI provide access to each interface the following attributes
 
 The following redis DB entries will be accessed for the FEC FLR calculations
 
-|Redis DB |Table|Entries|New, RW| Format | Descriptions|   
-|--------------|-------------|------------------|--------|----------------|----------------|  
+|Redis DB |Table|Entries|New, RW| Format | Descriptions|
+|--------------|-------------|------------------|--------|----------------|----------------|
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES |R |number |Total number of uncorrected codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES |R |number |Total number of corrected codewords |
-|COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 |R |number |Total number of codewords with 0 symbol errors |
-|COUNTER_DB |COUNTERS_PORT_NAME_MAP | name & oid  |R |name  |Oid to name mapping |  
+|COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 |R |number |Total number of codewords without any errors |
+|COUNTER_DB |COUNTERS_PORT_NAME_MAP | name & oid  |R |name  |Oid to name mapping |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last |NEW, RW |number |Last uncorrectable codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last |NEW, RW |number |Last correctable codewords |
-|COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last |NEW, RW |number |Last codewords with 0 symbol errors |
-|COUNTER_DB |RATES |FEC_FLR |New, RW| floating |calculated FEC FLR |  
+|COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last |NEW, RW |number |Last codewords without any errors |
+|COUNTER_DB |RATES |FEC_FLR |New, RW| floating |calculated FEC FLR |
 
 
 ### 4.3 SAI API
@@ -117,17 +113,18 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 No change in the SAI API. No new SAI object accessed.
 
 ### 4.4 FEC interleaving 
-Interleaving is a process to rearrange codeword symbols so as to spread bursts of errors over multiple code-words that can be corrected by ECCs like FEC. An interleaving factor of 4 means that symbols from 4 different FEC codewords are transmitted in a round-robin fashion over the physical medium.
+With FEC interleaving factor incorporated, FEC FLR is expressed as
 
-With interleaving factor incorporated, FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 2, 4 etc)
+FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 0, 2, 4 etc)
 
-For X=2, FLR can be approximated to, FEC FLR = 2.4125 * CER <br>
-For X=4, FLR can be approximated to, FEC FLR = 4.95 * CER
+For X=2, FEC FLR = 2.4125 * CER <br>
+For X=4, FEC FLR = 4.95 * CER
 
 ### 4.5 Calculation Formulas
 
 ```
-Step 1: calcuate CER per poll interval (currently 1s)
+Step 1: calculate CER per poll interval (currently 1s)
+
     CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
 
     where, Uncorrectable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last
@@ -135,11 +132,11 @@ Step 1: calcuate CER per poll interval (currently 1s)
 				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 Step 2: calculate FEC FLR considering interleaving factor (X)
+    If X=0, FEC_FLR = CER
     If X=2, FEC_FLR = 2.4125 * CER
-    else if X=4, FEC_FLR = 4.95 * CER
+    If X=4, FEC_FLR = 4.95 * CER
 
-
-Step 3: the following data will be updated and its latest value stored in the COUNTER_DB, RATES table after each iteraction
+Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
 
     FEC_FLR, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
@@ -164,6 +161,8 @@ admin@qsd220:~$ portstat -f
  Ethernet88        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
  Ethernet96        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
 ```
+
+In case FEC is not supported, FEC_FLR field will display "n/a" in the corresponding entry.
 
 ## 6 Unit Test cases
 
