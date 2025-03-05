@@ -114,7 +114,7 @@ No change in the SAI API. No new SAI object accessed.
 ### 4.4 FEC interleaving 
 With FEC interleaving factor incorporated, FEC FLR is expressed as
 
-FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 0, 2, 4 etc)
+	FEC FLR = 1 - (1-CER)^X, where X is the interleaving factor (say 0, 2, 4 etc)
 
 For X=2, FEC FLR = 2.4125 * CER <br>
 For X=4, FEC FLR = 4.95 * CER
