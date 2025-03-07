@@ -101,10 +101,10 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES |R |number |Total number of uncorrected codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES |R |number |Total number of corrected codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 |R |number |Total number of codewords without any errors |
+|COUNTER_DB |RATES |FEC_FLR |New, RW| floating |calculated FEC FLR |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last |NEW, RW |number |Last uncorrectable codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last |NEW, RW |number |Last correctable codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last |NEW, RW |number |Last codewords without any errors |
-|COUNTER_DB |RATES |FEC_FLR |New, RW| floating |calculated FEC FLR |
 
 
 ### 4.3 SAI API
