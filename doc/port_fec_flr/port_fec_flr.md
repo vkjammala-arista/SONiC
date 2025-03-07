@@ -131,9 +131,9 @@ Step 1: calculate CER per poll interval (currently 1s)
 				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 Step 2: calculate FEC FLR considering interleaving factor (X)
-    If X=1, FEC_FLR = CER
-    If X=2, FEC_FLR = 2.4125 * CER
-    If X=4, FEC_FLR = 4.95 * CER
+    If X=1, FEC_FLR = 1.125 * CER
+    If X=2, FEC_FLR = 2.125 * CER
+    If X=4, FEC_FLR = 4.125 * CER
 
 Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
 
