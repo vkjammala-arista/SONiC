@@ -112,13 +112,12 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 No change in the SAI API. No new SAI object accessed.
 
 ### 4.4 FEC interleaving 
-With FEC interleaving factor (X) incorporated, FEC FLR is expressed as
+With FEC interleaving factor (X) incorporated, As per [IEEE 802.3df Logic Ad Hoc](https://www.ieee802.org/3/df/public/adhoc/logic/22_0630/opsasnick_3df_logic_220630a.pdf) FEC FLR is expressed as
 
 For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
 For X=4, FEC_FLR = 4.125 * CER
 
-*Refer to [IEEE 802.3df Logic Ad Hoc](https://www.ieee802.org/3/df/public/adhoc/logic/22_0630/opsasnick_3df_logic_220630a.pdf).*
 ### 4.5 Calculation Formulas
 
 ```
