@@ -25,7 +25,7 @@
 
 ### Scope  
 
-This document provides information about the implementation of Port Forward Error Correction (FEC) Frame Loss Ratio (FLR) estimation in SONiC.
+This document provides information about the implementation of Port Forward Error Correction (FEC) Frame Loss Ratio (FLR) support in SONiC.
 
 ### Definitions/Abbreviations
 
@@ -68,7 +68,7 @@ There are no changes to the current SONiC Architecture.
  * SWSS changes:
    + port_rates.lua
 
-      Enhance to collect and compute the FEC FLR on each port at the same port stat collection interval. It is currently at 1 second.
+      Enhance to collect and compute the FEC FLR on each port at the same port stat collection interval (Current default value is 1 second).
 
      - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES, and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0.
      - Store the computed FEC FLR and previous redis counter values back to the redis DB.
@@ -95,9 +95,9 @@ SAI provide access to each interface the following attributes
 
 The following redis DB entries will be accessed for the FEC FLR calculations
 
-|Redis DB |Table|Entries|New, RW| Format | Descriptions|
+|Redis DB |Table|Entries|New, RW| Format | Description|
 |--------------|-------------|------------------|--------|----------------|----------------|
-|COUNTER_DB |COUNTERS_PORT_NAME_MAP | name & oid  |R |name  |Oid to name mapping |
+|COUNTER_DB |COUNTERS_PORT_NAME_MAP | oid  |R |string |Name to oid mapping |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES |R |number |Total number of uncorrected codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES |R |number |Total number of corrected codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 |R |number |Total number of codewords without any errors |
@@ -118,10 +118,14 @@ For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
 For X=4, FEC_FLR = 4.125 * CER
 
+By default we consider "no interleaving" and thus FEC_FLR will be computed as "1.125 * CER".
+
+To include the interleaving factor in FEC_FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor, along with a possible new CLI command to determine whether the interleaving factor should be considered.
+
 ### 4.5 Calculation Formulas
 
 ```
-Step 1: calculate CER per poll interval (currently 1s)
+Step 1: calculate CER per PORT_STAT poll interval (default 1s)
 
     CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
 
@@ -129,10 +133,8 @@ Step 1: calculate CER per poll interval (currently 1s)
 	   Correctable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last +
 				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
-Step 2: calculate FEC FLR considering interleaving factor (X)
+Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
     If X=1, FEC_FLR = 1.125 * CER
-    If X=2, FEC_FLR = 2.125 * CER
-    If X=4, FEC_FLR = 4.125 * CER
 
 Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
 
@@ -160,7 +162,7 @@ admin@qsd220:~$ portstat -f
  Ethernet96        U           0             0                 0    0.00e+00       0.00e+00        0.00e+00
 ```
 
-In case FEC is not supported, FEC_FLR field will display "n/a" in the corresponding entry.
+In case FEC is not supported, FEC_FLR field will display "N/A" in the corresponding entry.
 
 ## 6 Unit Test cases
 
