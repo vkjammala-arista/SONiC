@@ -120,7 +120,7 @@ For X=4, FEC_FLR = 4.125 * CER
 
 By default we consider "no interleaving" and thus FEC_FLR will be computed as "1.125 * CER".
 
-To include the interleaving factor in FEC_FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor, along with a possible new CLI command to determine whether the interleaving factor should be considered.
+To include the interleaving factor in FEC_FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor. We could have a CLI configurable to determine whether the interleaving factor should be considered (in the absence of support for this new SAI attribute).
 
 ### 4.5 Calculation Formulas
 
