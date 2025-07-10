@@ -131,7 +131,7 @@ To include the interleaving factor in FEC_FLR computation, a new SAI port attrib
 ### 4.5 Observed FEC FLR 
 
 ```
-Step 1: calculate CER per poll interval
+Step 1: calculate observed CER per poll interval
 
     CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
 
@@ -140,20 +140,55 @@ Step 1: calculate CER per poll interval
 				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
-    If X=1, FEC_FLR = 1.125 * CER
+    If X=1, FEC_FLR_OBSERVED = 1.125 * CER
 
 Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
 
-    FEC_FLR, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
+    FEC_FLR_OBSERVED, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 ```
 
 ### 4.6 Predicted FEC FLR
 
-Linear regression based algorithm to predict FLR
- 
 ![alt text](./predicted-flr-linear-regression.png)
 
+The goal is to estimate FLR by extrapolating from observed codeword error distribution using linear regression.
+```
+Step 1: Prepare codeword index vector (x)
+	
+x = { 1, 2, ..., max_correctable_symbol_errors }, where max_correctable_symbol_errors=15 in case of RS544.
+
+Step 2: Compute codeword error vector (y)
+
+y[i] = log10( max(codeword[i], 1) / total_codewords ), where
+
+  - `codeword[i]`: number of codewords with i symbol errors
+  - `total_codewords`: total number of codewords
+  - `log10`: base-10 logarithm  
+
+Step 3: Perform linear regresion to arrive at slope and intercept
+
+slope = (n * Σ(xy) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
+
+intercept = (Σy - slope * Σx) / n
+
+where,
+  - n: number of data points (length of x or y vector)
+  - Σ: summation symbol (sum over all data points)
+
+Step 4: Compute extrapolated CER
+
+Using linear regression line, predicted CER will be
+
+extrapolated_cer = 10 ^ ( ucw_symbols_cnt * slope + intercept ), where
+  - ucw_symbols_cnt = 16  for RS-KP4 FEC
+ 
+
+Step 5: Compute FLR from extrapolated CER by considering interleaving factor
+If X=1, FEC_FLR_PREDICTED = 1.125 * CER
+
+Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
+```
 
 ## 5 Sample Output
 ```
