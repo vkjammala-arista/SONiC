@@ -126,7 +126,7 @@ To include the interleaving factor in FEC_FLR computation, a new SAI port attrib
 ### 4.5 Observed FEC FLR 
 
 ```
-**Step 1: calculate observed CER per poll interval**
+Step 1: calculate observed CER per poll interval
     Observed CER is expressed as, CER = Uncorrectable FEC codewords / Total FEC codewords Received, which can be expanded to
     
     CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Codewords with no symbol errors + Correctable FEC codewords)
@@ -136,11 +136,11 @@ To include the interleaving factor in FEC_FLR computation, a new SAI port attrib
 	   Correctable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last
 
 
-**Step 2: calculate FEC FLR using CER and considering interleaving factor (X)**
+Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
     If X=1, FEC_FLR_OBSERVED = 1.125 * CER
 
 
-**Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation**
+Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
 
     FEC_FLR_OBSERVED, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
@@ -150,51 +150,51 @@ To include the interleaving factor in FEC_FLR computation, a new SAI port attrib
 
 The goal is to estimate FLR by extrapolating from observed codeword error distribution using linear regression.
 ```
-**Step 1: Prepare codeword index vector (x)**
+Step 1: Prepare codeword index vector (x)
 	
-x = { 1, 2, ..., max_correctable_cw_symbol_errors }, where
-  - max_correctable_cw_symbol_errors = 15 in case of RS-544
+    x = { 1, 2, ..., max_correctable_cw_symbol_errors }
+
+    where, max_correctable_cw_symbol_errors = 15 in case of RS-544
 	
 
-**Step 2: Compute codeword error vector (y)**
+Step 2: Compute codeword error vector (y)
 
-For each index i in vector x, compute logarithmic of normalised codeword error ratio y[i] as follows
+    For each index i in vector x, compute logarithmic of normalised codeword error ratio y[i] as follows
 
-y[i] = log10( max(codeword[i], 1) / total_codewords ), where
+    y[i] = log10( max(codeword[i], 1) / total_codewords )
 
-  - codeword[i]: number of codewords with i symbol errors in the poll interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last
-  - total_codewords: total number of codewords i.e Σ(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
-  - log10: base-10 logarithm  
+    where, codeword[i]: number of codewords with i symbol errors in the poll interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last
+	   total_codewords: total number of codewords i.e Σ(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
+           log10: base-10 logarithm  
 
-This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
-
-
-**Step 3: Perform linear regresion to arrive at slope and intercept**
-
-slope = (n * Σ(x*y) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
-
-intercept = (Σy - slope * Σx) / n
-
-where,
-  - n: number of data points (length of x or y vector)
-  - Σ: summation symbol (sum over all data points)
-
-This gives the best-fit line, y = slope * x + intercept.
+    This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
 
 
-**Step 4: Compute extrapolated CER**
+Step 3: Perform linear regresion to arrive at slope and intercept
 
-Using linear regression line, predicted CER will be
+    slope = (n * Σ(x*y) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
 
-extrapolated_cer = Σ from j=16 to 20 of [ 10 ^ ( j * slope + intercept ) ]
+    intercept = (Σy - slope * Σx) / n
+
+    where, n: number of data points (length of x or y vector)
+           Σ: summation symbol (sum over all data points)
+
+    This gives the best-fit line, y = slope * x + intercept.
+
+
+Step 4: Compute extrapolated CER
+
+    Using linear regression line, predicted CER will be
+
+    extrapolated_cer = Σ from j=16 to 20 of [ 10 ^ ( j * slope + intercept ) ]
  
 
-**Step 5: Compute FLR from extrapolated CER by considering interleaving factor**
-If X=1, FEC_FLR_PREDICTED = 1.125 * CER
-If X=2, FEC_FLR_PREDICTED = 2.125 * CER
+Step 5: Compute FLR from extrapolated CER by considering interleaving factor
+   If X=1, FEC_FLR_PREDICTED = 1.125 * CER
+   If X=2, FEC_FLR_PREDICTED = 2.125 * CER
 
 
-**Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table**
+Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
 ```
 
 ## 5 Sample Output
