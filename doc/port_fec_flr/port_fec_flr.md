@@ -43,11 +43,7 @@ Frame Loss Ratio (FLR) is a key performance metric used to measure the percentag
 FLR is expressed as,
 	FLR = (Total Transmitted Frames - Total Received Frames) / Total Transmitted Frames
 
-Based on the Forward Error Correction (FEC) data, receiver device can compute Codeword Error Ratio (CER) which is expressed as
-
-	CER = Uncorrectable FEC codewords / Total FEC codewords Received
-
-and FEC FLR can be estimated from CER.
+Based on the Forward Error Correction (FEC) data, receiver device can compute Codeword Error Ratio (CER) and FEC FLR can be estimated from CER.
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
@@ -74,7 +70,7 @@ There are no changes to the current SONiC Architecture.
       Enhance to collect and compute the FEC FLR on each port at an interval of 120 secs.
 
      - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES,
-       and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15.
+       and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15 in case of RS-544 FEC.
      - Store the computed FEC FLR (observed and predicted) and previous redis counter values back to the redis DB.
 
  * Utilities Common changes:
@@ -104,13 +100,12 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 |COUNTER_DB |COUNTERS_PORT_NAME_MAP | oid  |R |string |Name to oid mapping |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES |R |number |Total number of uncorrectable codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES |R |number |Total number of correctable codewords |
-|COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 |R |number |Total number of codewords without any errors |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si |R |number |Total number of codewords with i symbol errors |
 |COUNTER_DB |RATES |FEC_FLR_OBSERVED |New, RW| floating |calculated observed FEC FLR |
 |COUNTER_DB |RATES |FEC_FLR_PREDICTED |New, RW| floating |calculated predicted FEC FLR |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last |NEW, RW |number |Last uncorrectable codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last |NEW, RW |number |Last correctable codewords |
-|COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last |NEW, RW |number |Last codewords without any errors |
+|COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last |NEW, RW |number |Last codewords with i symbol errors |
 
 
 ### 4.3 SAI API
@@ -131,18 +126,21 @@ To include the interleaving factor in FEC_FLR computation, a new SAI port attrib
 ### 4.5 Observed FEC FLR 
 
 ```
-Step 1: calculate observed CER per poll interval
-
-    CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Correctable FEC codewords)
+**Step 1: calculate observed CER per poll interval**
+    Observed CER is expressed as, CER = Uncorrectable FEC codewords / Total FEC codewords Received, which can be expanded to
+    
+    CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Codewords with no symbol errors + Correctable FEC codewords)
 
     where, Uncorrectable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last
-	   Correctable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last +
-				       SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
+           Codewords with no symbol errors = SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0 - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
+	   Correctable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last
 
-Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
+
+**Step 2: calculate FEC FLR using CER and considering interleaving factor (X)**
     If X=1, FEC_FLR_OBSERVED = 1.125 * CER
 
-Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
+
+**Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation**
 
     FEC_FLR_OBSERVED, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
@@ -150,25 +148,30 @@ Step 3: the following data will be updated and its latest value will be stored i
 
 ### 4.6 Predicted FEC FLR
 
-![alt text](./predicted-flr-linear-regression.png)
-
 The goal is to estimate FLR by extrapolating from observed codeword error distribution using linear regression.
 ```
-Step 1: Prepare codeword index vector (x)
+**Step 1: Prepare codeword index vector (x)**
 	
-x = { 1, 2, ..., max_correctable_symbol_errors }, where max_correctable_symbol_errors=15 in case of RS544.
+x = { 1, 2, ..., max_correctable_cw_symbol_errors }, where
+  - max_correctable_cw_symbol_errors = 15 in case of RS-544
+	
 
-Step 2: Compute codeword error vector (y)
+**Step 2: Compute codeword error vector (y)**
+
+For each index i in vector x, compute logarithmic of normalised codeword error ratio y[i] as follows
 
 y[i] = log10( max(codeword[i], 1) / total_codewords ), where
 
-  - `codeword[i]`: number of codewords with i symbol errors
-  - `total_codewords`: total number of codewords
-  - `log10`: base-10 logarithm  
+  - codeword[i]: number of codewords with i symbol errors in the poll interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last
+  - total_codewords: total number of codewords i.e Σ(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
+  - log10: base-10 logarithm  
 
-Step 3: Perform linear regresion to arrive at slope and intercept
+This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
 
-slope = (n * Σ(xy) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
+
+**Step 3: Perform linear regresion to arrive at slope and intercept**
+
+slope = (n * Σ(x*y) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
 
 intercept = (Σy - slope * Σx) / n
 
@@ -176,18 +179,22 @@ where,
   - n: number of data points (length of x or y vector)
   - Σ: summation symbol (sum over all data points)
 
-Step 4: Compute extrapolated CER
+This gives the best-fit line, y = slope * x + intercept.
+
+
+**Step 4: Compute extrapolated CER**
 
 Using linear regression line, predicted CER will be
 
-extrapolated_cer = 10 ^ ( ucw_symbols_cnt * slope + intercept ), where
-  - ucw_symbols_cnt = 16  for RS-KP4 FEC
+extrapolated_cer = Σ from j=16 to 20 of [ 10 ^ ( j * slope + intercept ) ]
  
 
-Step 5: Compute FLR from extrapolated CER by considering interleaving factor
+**Step 5: Compute FLR from extrapolated CER by considering interleaving factor**
 If X=1, FEC_FLR_PREDICTED = 1.125 * CER
+If X=2, FEC_FLR_PREDICTED = 2.125 * CER
 
-Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
+
+**Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table**
 ```
 
 ## 5 Sample Output
