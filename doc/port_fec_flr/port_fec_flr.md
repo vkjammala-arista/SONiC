@@ -160,14 +160,15 @@ Step 1: Prepare codeword error index vector (x)
 
 Step 2: Compute codeword error vector (y)
 
-    For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
+For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
 
-    y[i] = $\log_{10}( codeword_errors[i] / total_codewords )$
+$$
+y[i] = \log_{10}( codeword_errors[i] / total_codewords )
+$$
 
-    where, total_codewords: total number of codewords i.e $ \sum_{I=10^{15} f(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si) $
-           log10: base-10 logarithm  
+where, total_codewords: total number of codewords i.e $ \sum_{I=10^{15} f(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si) $
 
-    TBD: This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
+TBD: This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
 
 
 Step 3: Perform linear regresion to arrive at slope and intercept
