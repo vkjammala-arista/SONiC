@@ -149,7 +149,6 @@ Step 3: the following data will be updated and its latest value will be stored i
 ### 4.6 Predicted FEC FLR
 
 The goal is to estimate FEC FLR by extrapolating from observed codeword error distribution.
-```
 Step 1: Prepare codeword error index vector (x)
 	
     x = { 1, 2, ..., max_correctable_cw_symbol_errors }
@@ -197,7 +196,6 @@ Step 5: Compute FLR from extrapolated CER by considering interleaving factor
 
 
 Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
-```
 
 ## 5 Sample Output
 ```
