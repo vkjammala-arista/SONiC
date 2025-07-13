@@ -22,8 +22,8 @@
 
   | Rev |     Date    |       Author           | Change Description                |
   |:---:|:-----------:|:----------------------:|-----------------------------------|
-  | 0.1 | 19-Mar-2025 | Pandurangan R S, Vinod Kumar Reddy Jammala (Arista Networks)| Initial version                   |
-  | 0.2 | 07-Jul-2025 | Pandurangan R S, Vinod Kumar Reddy Jammala (Arista Networks)| Add predicted FEC FLR		|
+  | 0.1 | 19-Mar-2025 | Pandurangan R S, Vinod Kumar Jammala (Arista Networks)| Initial version                   |
+  | 0.2 | 07-Jul-2025 | Apoorv Sachan, Panurangan R S, Vinod Kumar Jammala (Arista Networks)| Add predicted FEC FLR		|
 
 ### Scope
 
@@ -43,7 +43,7 @@ Frame Loss Ratio (FLR) is a key performance metric used to measure the percentag
 FLR is expressed as,
 	FLR = (Total Transmitted Frames - Total Received Frames) / Total Transmitted Frames
 
-Based on the Forward Error Correction (FEC) data, receiver device can compute Codeword Error Ratio (CER) and FEC FLR can be estimated from CER.
+Based on the Forward Error Correction (FEC) data, receiver device can compute and estimate Codeword Error Ratio (CER), and FEC FLR will be derived from CER.
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
@@ -54,8 +54,8 @@ Based on the Forward Error Correction (FEC) data, receiver device can compute Co
 
 ### 2.2 CLI Requirements
 
-The existing "show interfaces counters fec-stats" will be enhanced to include FEC_FLR columns.
- - FEC_FLR_OBSERVED
+The existing "show interfaces counters fec-stats" will be enhanced to include FEC FLR columns.
+ - FEC_FLR
  - FEC_FLR_PREDICTED
 
 ## 3 Architecture Design
@@ -77,7 +77,7 @@ There are no changes to the current SONiC Architecture.
 
    + portstat.py:
 
-     The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR_OBSERVED and FEC_FLR_PREDICTED columns.
+     The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR and FEC_FLR_PREDICTED columns.
 
 
 ### 4.1 Assumptions
@@ -142,32 +142,33 @@ Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
 
 Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
 
-    FEC_FLR_OBSERVED, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
+    FEC_FLR, SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S0_last
 
 ```
 
 ### 4.6 Predicted FEC FLR
 
-The goal is to estimate FLR by extrapolating from observed codeword error distribution using linear regression.
+The goal is to estimate FEC FLR by extrapolating from observed codeword error distribution.
 ```
-Step 1: Prepare codeword index vector (x)
+Step 1: Prepare codeword error index vector (x)
 	
     x = { 1, 2, ..., max_correctable_cw_symbol_errors }
 
     where, max_correctable_cw_symbol_errors = 15 in case of RS-544
 	
+    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si
+	
 
 Step 2: Compute codeword error vector (y)
 
-    For each index i in vector x, compute logarithmic of normalised codeword error ratio y[i] as follows
+    For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
 
-    y[i] = log10( max(codeword[i], 1) / total_codewords )
+    y[i] = $\log_{10}( codeword_errors[i] / total_codewords )$
 
-    where, codeword[i]: number of codewords with i symbol errors in the poll interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last
-	   total_codewords: total number of codewords i.e Σ(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
+    where, total_codewords: total number of codewords i.e $ \sum_{I=10^{15} f(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si) $
            log10: base-10 logarithm  
 
-    This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
+    TBD: This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
 
 
 Step 3: Perform linear regresion to arrive at slope and intercept
@@ -186,7 +187,8 @@ Step 4: Compute extrapolated CER
 
     Using linear regression line, predicted CER will be
 
-    extrapolated_cer = Σ from j=16 to 20 of [ 10 ^ ( j * slope + intercept ) ]
+    predicted_cer_j = 10 ^ ( j * slope + intercept )
+    extrapolated_cer = Σ from j=16 to 20 of [ predicted_cer_j ]
  
 
 Step 5: Compute FLR from extrapolated CER by considering interleaving factor
@@ -200,21 +202,21 @@ Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
 ## 5 Sample Output
 ```
 admin@qsd220:~$ portstat -f
-      IFACE    STATE    FEC_CORR    FEC_UNCORR    FEC_SYMBOL_ERR    FEC_PRE_BER    FEC_POST_BER    FEC_FLR_OBSERVED    FEC_FLR_PREDICTED
------------  -------  ----------  ------------  ----------------  -------------  --------------  ------------------  -------------------
-  Ethernet0        U           0             0                 0    0.00e+00       0.00e+00                0.00e+00             0.00e+00
-  Ethernet8        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet16        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet24        U           0             0                 0    0.00e+00       0.00e+00                0.00e+00             0.00e+00
- Ethernet32        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet40        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet48        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet56        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet64        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet72        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet80        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet88        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
- Ethernet96        U           0             0                 0    0.00e+00       0.00e+00        	   0.00e+00             0.00e+00
+      IFACE    STATE    FEC_CORR    FEC_UNCORR    FEC_SYMBOL_ERR    FEC_PRE_BER    FEC_POST_BER    FEC_FLR    FEC_FLR_PREDICTED
+-----------  -------  ----------  ------------  ----------------  -------------  --------------  ---------  -------------------
+  Ethernet0        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+  Ethernet8        U           0             0                 0    0.00e+00       0.00e+00	  0.00e+00             0.00e+00
+ Ethernet16        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet24        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet32        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet40        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet48        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet56        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet64        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet72        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet80        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet88        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+ Ethernet96        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
 ```
 
 In case FEC is not supported, FEC_FLR field will display "N/A" in the corresponding entry.
