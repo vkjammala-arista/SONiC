@@ -163,10 +163,10 @@ Step 2: Compute codeword error vector (y)
 For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
 
 $$
-y[i] = \log_{10}( codeword_errors[i] / total_codewords )
+y[i] = \log_{10}( codeword\_errors[i] / total\_codewords )
 $$
 
-where, total_codewords: total number of codewords i.e $ \sum_{I=10^{15} f(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si) $
+where, total\_codewords: total number of codewords i.e $ \sum_{I=0}^{15} f(SAI\_PORT\_STAT\_IF\_IN\_FEC\_CODEWORD\_ERRORS\_S_i) $
 
 TBD: This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
 
