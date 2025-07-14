@@ -149,51 +149,75 @@ Step 3: the following data will be updated and its latest value will be stored i
 ### 4.6 Predicted FEC FLR
 
 The goal is to estimate FEC FLR by extrapolating from observed codeword error distribution.
-```
-Step 1: Prepare codeword error index vector (x)
-	
-    x = { 1, 2, ..., max_correctable_cw_symbol_errors }
 
-    where, max_correctable_cw_symbol_errors = 15 in case of RS-544
-	
-    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si.
-	
+**Step 1: Prepare codeword error index vector (x)**
 
-Step 2: Compute logarithm codeword error ratio vector (y)
+$$
+\begin{align*}
+x[\,] &= \{ 1, 2, \dots, \text{max\_correctable\_cw\_symbol\_errors} \},\, where\\
+max\_correctable\_cw\_symbol\_errors &= 15\,in\,case\,of\,RS\_544\\
+\end{align*}
+$$
 
-    By applying log10 scaling to the codeword error ratio, we convert a non-linear codeword error decay (codeword_errors) into a linear trend that can be modeled using linear regression.
-
-    For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
-    
-    y[i] = log10( codeword_errors[i] / total_codewords )
-    where, total_codewords is total number of codewords i.e Σ from i=0 to 15 of SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si
+For each index $i$ in vector $x$, $\text{codeword\_errors[i]}$ represents number of codewords with $i$ symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_S$i$.
 
 
-Step 3: Perform linear regresion to arrive at slope and intercept
+**Step 2: Compute logarithm codeword error ratio vector (y)**
 
-    slope = (n * Σ(x*y) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
-    intercept = (Σy - slope * Σx) / n
-    where, n: number of data points (length of x or y vector)
+By applying $log_{10}$ scaling to the codeword error ratio, we convert a non-linear codeword error decay (codeword_errors) into a linear trend that can be modeled using linear regression.
+For each index $i$ in vector $x$, compute logarithm of codeword error ratio $y[i]$ as follows
+$$
+\begin{align*}
+y_i &= \log_{10} \left( \frac{CW_i}{S_{CW}} \right)\,
+where,\\[2em]
+CW_i &= codewords\,with\,i\,symbol\,errors\\[2em]
+S_{CW} &= \sum_{i=0}^{15} E_i
+\end{align*}
+$$    
 
-    This gives the best-fit line, y = slope * x + intercept.
 
 
-Step 4: Compute extrapolated CER
+**Step 3: Perform linear regresion to arrive at slope and intercept**
+$$
+\begin{align*}
+\text{slope} &= \frac{n \sum xy - \sum x \sum y}{n \sum x^2 - (\sum x)^2} \\[2em]
+\text{intercept} &= \frac{\sum y - \text{slope} \sum x}{n} \\[2em]
+where, n &= number\,of\,data\,points
+\end{align*}\\
+\text{This gives the best-fit line} y = slope \times x + intercept.
+$$
 
-    Using linear regression line, predicted CER for an index representing j symbol errors is, predicted_cer_j = 10 ^ ( j * slope + intercept ).
 
+
+
+**Step 4: Compute extrapolated CER**
+
+Using linear regression line, predicted CER for an index representing $j$ symbol errors is, 
+$$
+\begin{align*}
+\text{predicted\_cer}_j &= 10^{j \times \text{slope} + \text{intercept}}\\[1em]
+\end{align*}
+$$
     Predicted cer for a window of codewords having uncorrectable symbol errors is
-
-    predicted_cer = Σ from j=16 to 20 of predicted_cer_j
- 
-
-Step 5: Compute FLR from extrapolated CER by considering interleaving factor
-   If X=1, FEC_FLR_PREDICTED = 1.125 * predicted_cer 
-   If X=2, FEC_FLR_PREDICTED = 2.125 * predicted_cer
+$$
+\begin{align*}
+\text{predicted\_cer} &= \sum_{j=16}^{20} \text{predicted\_cer}_j
+\end{align*}
+$$
 
 
-Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
-```
+**Step 5: Compute FLR from extrapolated CER by considering interleaving factor**
+$$
+\text{FEC\_FLR\_PREDICTED} =
+\begin{cases}
+    1.125 \times \text{predicted\_cer} & \text{if } X=1 \\
+    2.125 \times \text{predicted\_cer} & \text{if } X=2
+\end{cases}
+$$
+
+
+**Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table**
+
 
 ## 5 Sample Output
 ```
