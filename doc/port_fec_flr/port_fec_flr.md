@@ -43,7 +43,7 @@ Frame Loss Ratio (FLR) is a key performance metric used to measure the percentag
 FLR is expressed as,
 	FLR = (Total Transmitted Frames - Total Received Frames) / Total Transmitted Frames
 
-Based on the Forward Error Correction (FEC) data, receiver device can compute and estimate Codeword Error Ratio (CER), and FEC FLR will be derived from CER.
+Based on the Forward Error Correction (FEC) data, receiver device can compute and estimate Codeword Error Ratio (CER), and FEC FLR will be calculated from CER.
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
@@ -156,44 +156,40 @@ Step 1: Prepare codeword error index vector (x)
 
     where, max_correctable_cw_symbol_errors = 15 in case of RS-544
 	
-    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si
+    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si.
 	
 
-Step 2: Compute codeword error vector (y)
+Step 2: Compute logarithm codeword error ratio vector (y)
+
+    By applying log10 scaling to the codeword error ratio, we convert a non-linear codeword error decay (codeword_errors) into a linear trend that can be modeled using linear regression.
 
     For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
-
-    y[i] = $\log_{10}( codeword_errors[i] / total_codewords )$
-
-    where, total_codewords: total number of codewords i.e $ \sum_{I=10^{15} f(SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si) $
-           log10: base-10 logarithm  
-
-    TBD: This creates a log-scaled normalized error vector. The idea is that codeword error decay across bins follows a logarithmic trend, which is modeled linearly in log-scale.
+    
+    y[i] = log10( codeword_errors[i] / total_codewords )
+    where, total_codewords is total number of codewords i.e Σ from i=0 to 15 of SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si
 
 
 Step 3: Perform linear regresion to arrive at slope and intercept
 
     slope = (n * Σ(x*y) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
-
     intercept = (Σy - slope * Σx) / n
-
     where, n: number of data points (length of x or y vector)
-           Σ: summation symbol (sum over all data points)
 
     This gives the best-fit line, y = slope * x + intercept.
 
 
 Step 4: Compute extrapolated CER
 
-    Using linear regression line, predicted CER will be
+    Using linear regression line, predicted CER for an index representing j symbol errors is, predicted_cer_j = 10 ^ ( j * slope + intercept ).
 
-    predicted_cer_j = 10 ^ ( j * slope + intercept )
-    extrapolated_cer = Σ from j=16 to 20 of [ predicted_cer_j ]
+    Predicted cer for a window of codewords having uncorrectable symbol errors is
+
+    predicted_cer = Σ from j=16 to 20 of predicted_cer_j
  
 
 Step 5: Compute FLR from extrapolated CER by considering interleaving factor
-   If X=1, FEC_FLR_PREDICTED = 1.125 * CER
-   If X=2, FEC_FLR_PREDICTED = 2.125 * CER
+   If X=1, FEC_FLR_PREDICTED = 1.125 * predicted_cer 
+   If X=2, FEC_FLR_PREDICTED = 2.125 * predicted_cer
 
 
 Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
@@ -219,7 +215,7 @@ admin@qsd220:~$ portstat -f
  Ethernet96        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
 ```
 
-In case FEC is not supported, FEC_FLR field will display "N/A" in the corresponding entry.
+In case FEC is not supported, FEC_FLR and FEC_FLR_PREDICTED fields will display "N/A" in the corresponding entry.
 
 ## 6 Unit Test cases
 
