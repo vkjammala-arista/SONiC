@@ -182,11 +182,9 @@ Step 3: Perform linear regresion to arrive at slope and intercept
 Step 4: Compute extrapolated CER
 
     Using linear regression line, predicted CER for an index representing j symbol errors is
-
     predicted_cer_j = 10 ^ ( j * slope + intercept )
 
     Predicted cer for a window of codewords having uncorrectable symbol errors is
-
     predicted_cer = Σ from j=16 to 20 of predicted_cer_j
  
 
