@@ -150,7 +150,7 @@ Step 3: the following data will be updated and its latest value will be stored i
 
 The goal is to estimate FEC FLR by extrapolating from observed codeword error distribution.
 
-![predicted flr algorithm](./predicted_flr_algorithm.jpg)
+![predicted flr algorithm](./predicted_flr_algorithm.png)
 
 
 ## 5 Sample Output
