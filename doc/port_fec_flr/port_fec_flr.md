@@ -161,7 +161,8 @@ Step 1: Prepare codeword error index vector (x)
 
 Step 2: Compute logarithm codeword error ratio vector (y)
 
-    By applying log10 scaling to the codeword error ratio, we convert a non-linear codeword error decay (codeword_errors) into a linear trend that can be modeled using linear regression.
+    Codeword error ratio typically follows a exponential decay curve. By applying a logarithm to the codeword error ratio, this curve is transformed into a linear pattern,
+    making it suitable for linear regression modeling.
 
     For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
     
@@ -180,7 +181,9 @@ Step 3: Perform linear regresion to arrive at slope and intercept
 
 Step 4: Compute extrapolated CER
 
-    Using linear regression line, predicted CER for an index representing j symbol errors is, predicted_cer_j = 10 ^ ( j * slope + intercept ).
+    Using linear regression line, predicted CER for an index representing j symbol errors is
+
+    predicted_cer_j = 10 ^ ( j * slope + intercept )
 
     Predicted cer for a window of codewords having uncorrectable symbol errors is
 
