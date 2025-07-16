@@ -123,12 +123,12 @@ By default we consider "no interleaving" and thus FEC FLR will be computed as "1
 
 To include the interleaving factor in FEC FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor.
 
-### 4.5 Observed FEC FLR 
+### 4.5 Observed FEC FLR
 
 ```
 Step 1: calculate observed CER per poll interval
     Observed CER is expressed as, CER = Uncorrectable FEC codewords / Total FEC codewords Received, which can be expanded to
-    
+
     CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Codewords with no symbol errors + Correctable FEC codewords)
 
     where, Uncorrectable FEC codewords = SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES - SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last
@@ -151,13 +151,13 @@ Step 3: the following data will be updated and its latest value will be stored i
 The goal is to estimate FEC FLR by extrapolating from observed codeword error distribution.
 ```
 Step 1: Prepare codeword error index vector (x)
-	
+
     x = { 1, 2, ..., max_correctable_cw_symbol_errors }
 
     where, max_correctable_cw_symbol_errors = 15 in case of RS-544
-	
+
     For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si.
-	
+
 
 Step 2: Compute logarithm codeword error ratio vector (y)
 
@@ -165,7 +165,7 @@ Step 2: Compute logarithm codeword error ratio vector (y)
     making it suitable for linear regression modeling.
 
     For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
-    
+
     y[i] = log10( codeword_errors[i] / total_codewords )
     where, total_codewords is total number of codewords i.e Σ from i=0 to 15 of SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si
 
