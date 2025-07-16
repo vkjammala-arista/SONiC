@@ -23,7 +23,7 @@
   | Rev |     Date    |       Author           | Change Description                |
   |:---:|:-----------:|:----------------------:|-----------------------------------|
   | 0.1 | 19-Mar-2025 | Pandurangan R S, Vinod Kumar Jammala (Arista Networks)| Initial version                   |
-  | 0.2 | 07-Jul-2025 | Apoorv Sachan, Panurangan R S, Vinod Kumar Jammala (Arista Networks)| Add predicted FEC FLR		|
+  | 0.2 | 07-Jul-2025 | Apoorv Sachan, Pandurangan R S, Vinod Kumar Jammala (Arista Networks)| Add predicted FEC FLR		|
 
 ### Scope
 
@@ -101,7 +101,7 @@ The following redis DB entries will be accessed for the FEC FLR calculations
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES |R |number |Total number of uncorrectable codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES |R |number |Total number of correctable codewords |
 |COUNTER_DB |COUNTERS |SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si |R |number |Total number of codewords with i symbol errors |
-|COUNTER_DB |RATES |FEC_FLR_OBSERVED |New, RW| floating |calculated observed FEC FLR |
+|COUNTER_DB |RATES |FEC_FLR |New, RW| floating |calculated observed FEC FLR |
 |COUNTER_DB |RATES |FEC_FLR_PREDICTED |New, RW| floating |calculated predicted FEC FLR |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES_last |NEW, RW |number |Last uncorrectable codewords |
 |COUNTER_DB |RATES |SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES_last |NEW, RW |number |Last correctable codewords |
@@ -119,9 +119,9 @@ For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
 For X=4, FEC_FLR = 4.125 * CER
 
-By default we consider "no interleaving" and thus FEC_FLR will be computed as "1.125 * CER".
+By default we consider "no interleaving" and thus FEC FLR will be computed as "1.125 * CER".
 
-To include the interleaving factor in FEC_FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor.
+To include the interleaving factor in FEC FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor.
 
 ### 4.5 Observed FEC FLR 
 
@@ -137,7 +137,7 @@ Step 1: calculate observed CER per poll interval
 
 
 Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
-    If X=1, FEC_FLR_OBSERVED = 1.125 * CER
+    If X=1, FEC_FLR = 1.125 * CER
 
 
 Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
