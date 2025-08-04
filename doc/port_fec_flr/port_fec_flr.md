@@ -17,6 +17,7 @@
   - [4.5 Observed FEC FLR](#45-observed-fec-flr)
   - [4.6 Predicted FEC FLR](#46-predicted-fec-flr)
 - [5 Sample output](#5-sample-output)
+- [6 Acknowledgements](#6-Acknowledgements)
 
 ### Revision
 
@@ -48,15 +49,18 @@ Based on the Forward Error Correction (FEC) data, receiver device can compute an
 ## 2 Requirements
 ### 2.1 Functional Requirements
   This HLD is to
-  - Calculate the FEC FLR at an interval 120 secs.
+  - Calculate the FEC FLR at a configurable interval.
   - Add FEC FLR per interface into Redis DB for telemetry streaming.
   - Enhance the current "show interfaces counters fec-stats" to include FEC FLR statistics as a new column.
 
 ### 2.2 CLI Requirements
 
-The existing "show interfaces counters fec-stats" will be enhanced to include FEC FLR columns.
- - FEC_FLR
- - FEC_FLR_PREDICTED
+ * The existing "show interfaces counters fec-stats" will be enhanced to include FEC FLR columns.
+   - FEC_FLR
+   - FEC_FLR_PREDICTED
+ * A new CLI counterpoll port sub-command will be introduced to configure FEC FLR interval factor.
+   - "counterpoll port fec-flr-interval-factor FEC_FLR_INTERVAL_FACTOR"
+     - default value of FEC_FLR_INTERVAL_FACTOR will be 120
 
 ## 3 Architecture Design
 
@@ -65,20 +69,53 @@ There are no changes to the current SONiC Architecture.
 ## 4 High-Level Design
 
  * SWSS changes:
-   + port_rates.lua
 
-      Enhance to collect and compute the FEC FLR on each port at an interval of 120 secs.
+   + port_flr.lua
 
-     - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES,
-       and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15 in case of RS-544 FEC.
-     - Store the computed FEC FLR (observed and predicted) and previous redis counter values back to the redis DB.
+     New lua script which will
+       - Compute the FEC FLR on each port once in every 'port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR' secs.
+       - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES,
+         and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15 in case of RS-544 FEC.
+       - Store the computed FEC FLR (observed and predicted) and previous redis counter values back to the redis DB.
+
+   + portsorch.cpp
+     - Link "port_flr.lua" script as a plugin to PORT_STAT_COUNTER_FLEX_COUNTER_GROUP.
+
+   + flexcounterorch.cpp
+     - Enhance to update FEC_FLR_INTERVAL_FACTOR in the FLEX_COUNTER_DB.
 
  * Utilities Common changes:
 
    + portstat.py:
-
      The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR and FEC_FLR_PREDICTED columns.
 
+   + counterpoll/main.py
+     A new argument "fec-flr-interval-factor" will be added to exisiting "counterpoll poll" command
+
+     ```
+     root@sonic:~$ counterpoll port --help
+     Usage: counterpoll port [OPTIONS] COMMAND [ARGS]...
+
+       Port counter commands
+
+     Options:
+       --help  Show this message and exit.
+
+     Commands:
+       disable                  Disable port counter query
+       enable                   Enable port counter query
+       interval                 Set port counter query interval
+       fec-flr-interval-factor  Set port fec flr interval factor
+
+
+     root@sonic:~$ counterpoll port fec-flr-interval-factor --help
+     Usage: counterpoll port fec-flr-interval-factor [OPTIONS] FEC_FLR_INTERVAL_FACTOR
+
+       Set port fec flr interval factor
+
+     Options:
+       --help  Show this message and exit.
+     ```
 
 ### 4.1 Assumptions
 
@@ -126,7 +163,7 @@ To include the interleaving factor in FEC FLR computation, a new SAI port attrib
 ### 4.5 Observed FEC FLR
 
 ```
-Step 1: calculate observed CER per poll interval
+Step 1: calculate observed CER per interval
     Observed CER is expressed as, CER = Uncorrectable FEC codewords / Total FEC codewords Received, which can be expanded to
 
     CER = Uncorrectable FEC codewords / (Uncorrectable FEC codewords + Codewords with no symbol errors + Correctable FEC codewords)
@@ -156,7 +193,8 @@ Step 1: Prepare codeword error index vector (x)
 
     where, max_correctable_cw_symbol_errors = 15 in case of RS-544
 
-    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si.
+    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors in the current interval
+    i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last.
 
 
 Step 2: Compute logarithm codeword error ratio vector (y)
@@ -167,7 +205,7 @@ Step 2: Compute logarithm codeword error ratio vector (y)
     For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
 
     y[i] = log10( codeword_errors[i] / total_codewords )
-    where, total_codewords is total number of codewords i.e Σ from i=0 to 15 of SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si
+    where, total_codewords is total number of codewords i.e Σ from i=0 to 15 of (SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
 
 
 Step 3: Perform linear regresion to arrive at slope and intercept
@@ -218,9 +256,5 @@ admin@qsd220:~$ portstat -f
 
 In case FEC is not supported, FEC_FLR and FEC_FLR_PREDICTED fields will display "N/A" in the corresponding entry.
 
-## 6 Unit Test cases
-
-## 7 System Test cases
-
-## 8 Open/Action items - if any
-
+## 6 Acknowledgements
+Thanks to Prince and Cameron from Microsoft for sharing the details of Predicted FEC FLR algorithm.
