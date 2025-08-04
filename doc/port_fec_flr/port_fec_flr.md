@@ -72,25 +72,25 @@ There are no changes to the current SONiC Architecture.
 
    + port_flr.lua
 
-     New lua script which will
+     New lua script will
        - Compute the FEC FLR on each port once in every 'port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR' secs.
        - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES,
          and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15 in case of RS-544 FEC.
        - Store the computed FEC FLR (observed and predicted) and previous redis counter values back to the redis DB.
 
    + portsorch.cpp
-     - Link "port_flr.lua" script as a plugin to PORT_STAT_COUNTER_FLEX_COUNTER_GROUP.
+     - Link "port_flr.lua" script as a plugin to existing PORT_STAT_COUNTER_FLEX_COUNTER_GROUP.
 
    + flexcounterorch.cpp
-     - Enhance to update FEC_FLR_INTERVAL_FACTOR in the FLEX_COUNTER_DB.
+     - Enhance "FlexCounterOrch" to update FEC_FLR_INTERVAL_FACTOR in the FLEX_COUNTER_DB.
 
  * Utilities Common changes:
 
    + portstat.py:
      The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR and FEC_FLR_PREDICTED columns.
 
-   + counterpoll/main.py
-     A new argument "fec-flr-interval-factor" will be added to exisiting "counterpoll poll" command
+   + counterpoll/main.py:
+     A new argument "fec-flr-interval-factor" will be added to exisiting "counterpoll port" command.
 
      ```
      root@sonic:~$ counterpoll port --help
