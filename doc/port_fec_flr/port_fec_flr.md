@@ -189,7 +189,7 @@ Step 4: Compute extrapolated CER
  
 
 Step 5: Compute FLR from extrapolated CER by considering interleaving factor
-   If X=1, FEC_FLR_PREDICTED = 1.125 * predicted_cer 
+   If X=1, FEC_FLR_PREDICTED = 1.125 * predicted_cer
    If X=2, FEC_FLR_PREDICTED = 2.125 * predicted_cer
 
 
