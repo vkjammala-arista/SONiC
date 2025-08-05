@@ -55,11 +55,11 @@ Based on the Forward Error Correction (FEC) data, receiver device can compute an
 
 ### 2.2 CLI Requirements
 
- * The existing "show interfaces counters fec-stats" will be enhanced to include FEC FLR columns.
+ * The existing `show interfaces counters fec-stats` will be enhanced to include FEC FLR columns.
    - FEC_FLR
    - FEC_FLR_PREDICTED
  * A new CLI counterpoll port sub-command will be introduced to configure FEC FLR interval factor.
-   - "counterpoll port fec-flr-interval-factor FEC_FLR_INTERVAL_FACTOR"
+   - `counterpoll port fec-flr-interval-factor FEC_FLR_INTERVAL_FACTOR`
      - default value of FEC_FLR_INTERVAL_FACTOR will be 120
 
 ## 3 Architecture Design
@@ -72,11 +72,11 @@ There are no changes to the current SONiC Architecture.
 
    + port_flr.lua
 
-     New lua script will
-       - Compute the FEC FLR on each port once in every 'port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR' secs.
+     This new lua script will
        - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES,
          and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15 in case of RS-544 FEC.
        - Store the computed FEC FLR (observed and predicted) and previous redis counter values back to the redis DB.
+       - Compute the FEC FLR on each port once in every 'port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR' secs, where FEC_FLR_INTERVAL_FACTOR is fetched from FLEX_COUNTER_DB.
 
    + portsorch.cpp
      - Link "port_flr.lua" script as a plugin to existing PORT_STAT_COUNTER_FLEX_COUNTER_GROUP.
@@ -87,10 +87,10 @@ There are no changes to the current SONiC Architecture.
  * Utilities Common changes:
 
    + portstat.py:
-     The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR and FEC_FLR_PREDICTED columns.
+     - The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR and FEC_FLR_PREDICTED columns.
 
    + counterpoll/main.py:
-     A new argument "fec-flr-interval-factor" will be added to exisiting "counterpoll port" command.
+     - A new argument `fec-flr-interval-factor` will be added to exisiting "counterpoll port" command.
 
      ```
      root@sonic:~$ counterpoll port --help
