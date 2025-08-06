@@ -156,11 +156,19 @@ For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
 For X=4, FEC_FLR = 4.125 * CER
 
-To include the interleaving factor in FEC FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor.
-
+To include the interleaving factor in FEC FLR computation, a new SAI port attribute will be needed to retrieve the underlying port interleaving factor.
 Until we have such SAI port attribute, we can derive interleaving factor based on the port speed as mentioned in below table
 
-![FEC interleaving factor](./fec_interleaving_factor.png)
+| Port Speed | No. of lanes | FEC interleaving factor(X) |
+|------------|--------------|----------------------------|
+|      1600G |            8 |                          4 |
+|       800G |            8 |                          4 |
+|       400G |            8 |                          2 |
+|       400G |            4 |                          2 |
+|       200G |            4 |                          2 |
+|       200G |            2 |                          2 |
+|       100G |            2 |                          2 |
+|       100G |            1 |    1 or 2 (autonegotiated) |
 
 ### 4.5 Observed FEC FLR
 
