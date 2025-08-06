@@ -186,6 +186,7 @@ Step 1: calculate observed CER per interval
 
 Step 2: calculate FEC FLR using CER and considering interleaving factor (X)
     If X=1, FEC_FLR = 1.125 * CER
+    If X=2, FEC_FLR = 2.125 * CER
 
 
 Step 3: the following data will be updated and its latest value will be stored in the COUNTER_DB:RATES table after each computation
@@ -242,7 +243,7 @@ Step 5: Compute FLR from extrapolated CER by considering interleaving factor
    If X=2, FEC_FLR_PREDICTED = 2.125 * predicted_cer
 
 
-Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
+Step 6: Store FEC_FLR_PREDICTED, SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last in the COUNTER_DB:RATES table
 ```
 
 ## 5 Sample CLI Output
