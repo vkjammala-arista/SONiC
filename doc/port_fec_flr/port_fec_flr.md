@@ -245,27 +245,28 @@ Step 5: Compute FLR from extrapolated CER by considering interleaving factor
 Step 6: Store FEC_FLR_PREDICTED in the COUNTER_DB:RATES table
 ```
 
-## 5 Sample Output
+## 5 Sample CLI Output
 ```
-admin@qsd220:~$ portstat -f
+root@sonic:~$ portstat -f
       IFACE    STATE    FEC_CORR    FEC_UNCORR    FEC_SYMBOL_ERR    FEC_PRE_BER    FEC_POST_BER    FEC_FLR    FEC_FLR_PREDICTED
 -----------  -------  ----------  ------------  ----------------  -------------  --------------  ---------  -------------------
-  Ethernet0        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
-  Ethernet8        U           0             0                 0    0.00e+00       0.00e+00	  0.00e+00             0.00e+00
- Ethernet16        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet24        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet32        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet40        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet48        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet56        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet64        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet72        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet80        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet88        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
- Ethernet96        U           0             0                 0    0.00e+00       0.00e+00       0.00e+00             0.00e+00
+  Ethernet0        U           0             0                 0       0.00e+00        0.00e+00          0                    0
+  Ethernet8        U           0             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet16        X           0             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet24        X           0             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet32        U           0             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet40        D          21             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet48        X           0             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet56        X           0             0                 0       0.00e+00        0.00e+00          0                    0
+ Ethernet64        U       1,334             0                 4       0.00e+00        0.00e+00          0                    0
+ Ethernet72        U      28,531             0                31       0.00e+00        0.00e+00          0             2.68e-09
+ Ethernet80        U      25,890             0                25       0.00e+00        0.00e+00          0             6.03e-09
+ Ethernet88        U      21,909             0                49       0.00e+00        0.00e+00          0                    0
+ Ethernet96        U       5,635             0                 8       0.00e+00        0.00e+00          0                    0
+Ethernet104        U      21,141             0                 7       0.00e+00        0.00e+00          0             7.08e-09
 ```
 
-In case FEC is not supported, FEC_FLR and FEC_FLR_PREDICTED fields will display "N/A" in the corresponding entry.
+If FEC is not supported for an interface, the FEC_FLR and FEC_FLR_PREDICTED fields will display `N/A` for the corresponding entry. If there is insufficient data to compute the FEC FLR (e.g., when the link is performing well), these fields will display `0` (note that `0` is shown instead of `0.00e+00` for better readability).
 
 ## 6 Acknowledgements
 Thanks to Prince and Cameron from Microsoft for sharing the details of the predicted FEC FLR algorithm and the mapping of port speed to interleaving factor.
