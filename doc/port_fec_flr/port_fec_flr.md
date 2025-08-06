@@ -28,7 +28,7 @@
 
 ### Scope
 
-This document provides information about the implementation of Port Forward Error Correction (FEC) Frame Loss Ratio (FLR) support in SONiC.
+This document describes the implementation of Port Forward Error Correction (FEC) Frame Loss Ratio (FLR) support in SONiC.
 
 ### Definitions/Abbreviations
 
@@ -48,19 +48,19 @@ Based on the Forward Error Correction (FEC) data, receiver device can compute an
 
 ## 2 Requirements
 ### 2.1 Functional Requirements
-  This HLD is to
-  - Calculate the FEC FLR at a configurable interval.
-  - Add FEC FLR per interface into Redis DB for telemetry streaming.
-  - Enhance the current "show interfaces counters fec-stats" to include FEC FLR statistics as a new column.
+  This HLD introduces the following enhancements:
+  - Calculation of FEC FLR at a configurable interval.
+  - Storing per-interface FEC FLR in the Redis DB for telemetry streaming.
+  - Enhancement of the `show interfaces counters fec-stats` CLI to include FEC FLR statistics.
 
 ### 2.2 CLI Requirements
 
- * The existing `show interfaces counters fec-stats` will be enhanced to include FEC FLR columns.
+ * The existing `show interfaces counters fec-stats` command will be enhanced to include the following FEC FLR columns:
    - FEC_FLR
    - FEC_FLR_PREDICTED
- * A new CLI counterpoll port sub-command will be introduced to configure FEC FLR interval factor.
+ * A new `counterpoll port` sub-command will be introduced to configure FEC FLR interval factor:
    - `counterpoll port fec-flr-interval-factor FEC_FLR_INTERVAL_FACTOR`
-     - default value of FEC_FLR_INTERVAL_FACTOR will be 120
+     - The default value of FEC_FLR_INTERVAL_FACTOR will be 120.
 
 ## 3 Architecture Design
 
@@ -75,22 +75,23 @@ There are no changes to the current SONiC Architecture.
      This new lua script will
        - Access the COUNTER_DB for already available counters for SAI_PORT_STAT_IF_IN_FEC_NOT_CORRECTABLE_FRAMES, SAI_PORT_STAT_IF_IN_FEC_CORRECTABLE_FRAMES,
          and SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si representing codewords with i symbol errors where i ranges from 0 to 15 in case of RS-544 FEC.
-       - Store the computed FEC FLR (observed and predicted) and previous redis counter values back to the redis DB.
-       - Compute the FEC FLR on each port once in every 'port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR' secs, where FEC_FLR_INTERVAL_FACTOR is fetched from FLEX_COUNTER_DB.
+       - Compute both observed and predicted FEC FLR per port.
+       - Store the computed FEC FLR values and the previous Redis counter values back into the Redis DB.
+       - Perform the FEC FLR computation on each port once every `port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR` seconds, where FEC_FLR_INTERVAL_FACTOR is retrieved from the FLEX_COUNTER_DB.
 
    + portsorch.cpp
-     - Link "port_flr.lua" script as a plugin to existing PORT_STAT_COUNTER_FLEX_COUNTER_GROUP along with "port_rates.lua".
+     - Link the new "port_flr.lua" script as a plugin to the existing PORT_STAT_COUNTER_FLEX_COUNTER_GROUP, alongside "port_rates.lua".
 
    + flexcounterorch.cpp
-     - Enhance "FlexCounterOrch" to update FEC_FLR_INTERVAL_FACTOR from CONFIG_DB to the FLEX_COUNTER_DB.
+     - Enhance "FlexCounterOrch" to propagate FEC_FLR_INTERVAL_FACTOR from CONFIG_DB to FLEX_COUNTER_DB.
 
  * Utilities Common changes:
 
    + portstat.py:
-     - The portstat command with -f, representing the cli "show interfaces counters fec-stats" will be enhanced to add FEC_FLR and FEC_FLR_PREDICTED columns.
+     - Enhance the `portstat` command with the `-f` option (used by the CLI command `show interfaces counters fec-stats`) to include the FEC_FLR and FEC_FLR_PREDICTED columns.
 
    + counterpoll/main.py:
-     - A new argument `fec-flr-interval-factor` will be added to exisiting "counterpoll port" command.
+     - Add a new argument `fec-flr-interval-factor` to the exisiting `counterpoll port` command.
 
      ```
      root@sonic:~$ counterpoll port --help
@@ -156,8 +157,8 @@ For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
 For X=4, FEC_FLR = 4.125 * CER
 
-To include the interleaving factor in FEC FLR computation, a new SAI port attribute will be needed to retrieve the underlying port interleaving factor.
-Until we have such SAI port attribute, we can derive interleaving factor based on the port speed as mentioned in below table
+To include the interleaving factor in the FEC FLR computation, a new SAI port attribute will be required to retrieve the underlying port interleaving factor.
+Until such an attribute is available, the interleaving factor can be derived based on the following port speed to interleaving factor mapping:
 
 | Port Speed | No. of lanes | FEC interleaving factor(X) |
 |------------|--------------|----------------------------|
@@ -267,4 +268,4 @@ admin@qsd220:~$ portstat -f
 In case FEC is not supported, FEC_FLR and FEC_FLR_PREDICTED fields will display "N/A" in the corresponding entry.
 
 ## 6 Acknowledgements
-Thanks to Prince and Cameron from Microsoft for sharing the details of Predicted FEC FLR algorithm.
+Thanks to Prince and Cameron from Microsoft for sharing the details of the predicted FEC FLR algorithm and the mapping of port speed to interleaving factor.
