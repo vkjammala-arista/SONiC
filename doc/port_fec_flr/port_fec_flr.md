@@ -79,10 +79,10 @@ There are no changes to the current SONiC Architecture.
        - Compute the FEC FLR on each port once in every 'port_stat POLL_INTERVAL * FEC_FLR_INTERVAL_FACTOR' secs, where FEC_FLR_INTERVAL_FACTOR is fetched from FLEX_COUNTER_DB.
 
    + portsorch.cpp
-     - Link "port_flr.lua" script as a plugin to existing PORT_STAT_COUNTER_FLEX_COUNTER_GROUP.
+     - Link "port_flr.lua" script as a plugin to existing PORT_STAT_COUNTER_FLEX_COUNTER_GROUP along with "port_rates.lua".
 
    + flexcounterorch.cpp
-     - Enhance "FlexCounterOrch" to update FEC_FLR_INTERVAL_FACTOR in the FLEX_COUNTER_DB.
+     - Enhance "FlexCounterOrch" to update FEC_FLR_INTERVAL_FACTOR from CONFIG_DB to the FLEX_COUNTER_DB.
 
  * Utilities Common changes:
 
@@ -156,9 +156,11 @@ For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
 For X=4, FEC_FLR = 4.125 * CER
 
-By default we consider "no interleaving" and thus FEC FLR will be computed as "1.125 * CER".
-
 To include the interleaving factor in FEC FLR computation, a new SAI port attribute will be needed to retrieve the underlying interleaving factor.
+
+Until we have such SAI port attribute, we can derive interleaving factor based on the port speed as mentioned in below table
+
+![FEC interleaving factor](./fec_interleaving_factor.png)
 
 ### 4.5 Observed FEC FLR
 
