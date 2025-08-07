@@ -205,19 +205,20 @@ Step 1: Prepare codeword error index vector (x)
 
     where, max_correctable_cw_symbol_errors = 15 in case of RS-544
 
-    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors in the current interval
-    i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last.
+    For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors in the
+    current interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last.
 
 
 Step 2: Compute logarithm codeword error ratio vector (y)
 
-    Codeword error ratio typically follows a exponential decay curve. By applying a logarithm to the codeword error ratio, this curve is transformed into a linear pattern,
-    making it suitable for linear regression modeling.
+    Codeword error ratio typically follows a exponential decay curve. By applying a logarithm to the codeword error
+    ratio, this curve is transformed into a linear pattern, making it suitable for linear regression modeling.
 
     For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
 
     y[i] = log10( codeword_errors[i] / total_codewords )
-    where, total_codewords is total number of codewords i.e Σ from i=0 to 15 of (SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
+    where, total_codewords is total number of codewords
+           i.e Σ from i=0 to 15 of (SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
 
 
 Step 3: Perform linear regresion to arrive at slope and intercept
