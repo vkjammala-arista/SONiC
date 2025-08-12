@@ -211,13 +211,14 @@ Step 1: Prepare codeword error index vector (x)
     current interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last.
 ```
 
-Codeword error ratio typically follows a exponential decay curve as shown in below image
+
+The codeword error ratio typically follows an exponential decay curve, as shown in the image below.
 ![Exponential decay curve of CER](./img/Exponential_decay_curve_of_CER.png)
 
 ```
 Step 2: Compute logarithm codeword error ratio vector (y)
 
-    By applying a logarithm to the codeword error ratio, above exponential decay curve is transformed into a
+    By applying a logarithm to the codeword error ratio, the exponential decay curve is transformed into a
     linear pattern, making it suitable for linear regression modeling.
 
     For each index i in vector x, compute logarithm of codeword error ratio y[i] as follows
@@ -227,7 +228,8 @@ Step 2: Compute logarithm codeword error ratio vector (y)
            i.e Σ from i=0 to 15 of (SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
 ```
 
-Below image shows the linear pattern of CER after applying logarithm to the codeword error ratio
+
+The image below shows the linear pattern of the codeword error ratio (CER) after applying a logarithm.
 ![Logarithm curve of CER](./img/Logarithm_curve_of_CER.png)
 
 ```
@@ -240,18 +242,20 @@ Step 3: Perform linear regresion to arrive at slope and intercept
     This gives the best-fit line, y = slope * x + intercept.
 ```
 
-Below image shows the linear regression line
+
+The image below shows the linear regression line along with the logarithmic curve of the codeword error ratio (CER).
 ![Logarithm curve of CER and Linear regression fit](./img/Logarithm_curve_of_CER_and_Linear_regression_fit.png)
 
+```
 Step 4: Compute extrapolated CER
 
     Using linear regression line, predicted CER for an index representing j symbol errors is
     predicted_cer_j = 10 ^ ( j * slope + intercept )
 
-    Predicted cer for a window of codewords having uncorrectable symbol errors is
+    The predicted CER for a window of codewords with uncorrectable symbol errors is calculated as:
     predicted_cer = Σ from j=16 to 20 of predicted_cer_j
 
-    Note: Here we are using uncorrectable symbol errors window from 16 to 20, as for the values above 20 predicted_cer will be insignificant.
+    Note: We use the uncorrectable symbol error window from 16 to 20 because for values above 20, the predicted CER becomes insignificant.
  
 
 Step 5: Compute FLR from extrapolated CER by considering interleaving factor
