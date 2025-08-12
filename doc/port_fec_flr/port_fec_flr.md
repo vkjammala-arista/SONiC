@@ -210,7 +210,8 @@ Step 1: Prepare codeword error index vector (x)
     For each index i in vector x, codeword_errors[i] represents number of codewords with i symbol errors in the
     current interval i.e SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last.
 ```
-<br>
+
+
 The codeword error ratio typically follows an exponential decay curve, as shown in the image below.
 ![Exponential decay curve of CER](./img/Exponential_decay_curve_of_CER.png)
 
@@ -226,7 +227,8 @@ Step 2: Compute logarithm codeword error ratio vector (y)
     where, total_codewords is total number of codewords
            i.e Σ from i=0 to 15 of (SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si - SAI_PORT_STAT_IF_IN_FEC_CODEWORD_ERRORS_Si_last)
 ```
-<br>
+
+
 The image below shows the linear pattern of the codeword error ratio (CER) after applying a logarithm.
 ![Logarithm curve of CER](./img/Logarithm_curve_of_CER.png)
 
@@ -239,7 +241,8 @@ Step 3: Perform linear regresion to arrive at slope and intercept
 
     This gives the best-fit line, y = slope * x + intercept.
 ```
-<br>
+
+
 The image below shows the linear regression line along with the logarithmic curve of the codeword error ratio (CER).
 ![Logarithm curve of CER and Linear regression fit](./img/Logarithm_curve_of_CER_and_Linear_regression_fit.png)
 
