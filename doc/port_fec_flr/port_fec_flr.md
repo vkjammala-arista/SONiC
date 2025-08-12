@@ -153,7 +153,7 @@ No change in the SAI API. No new SAI object accessed.
 ### 4.4 FEC interleaving
 With FEC interleaving factor (X) incorporated, As per [IEEE 802.3df Logic Ad Hoc](https://www.ieee802.org/3/df/public/adhoc/logic/22_0630/opsasnick_3df_logic_220630a.pdf) FEC FLR is expressed as
 
-FEC_FLR = CER * (1 + X * MFC)/MFC, where MFC (MAC frames per codeword) is 8 in case of RS544 FEC. Thus,
+FEC_FLR = CER * (1 + X * MFC)/MFC, where MFC (MAC frames per codeword) is 8 in the case of RS-544 FEC. Thus,
 
 For X=1 (no interleaving), FEC_FLR = 1.125 * CER <br>
 For X=2, FEC_FLR = 2.125 * CER <br>
