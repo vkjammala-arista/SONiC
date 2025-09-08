@@ -1,5 +1,13 @@
 # FEC FLR support in SONiC #
 
+## Code PRs for tracking
+The code pull requests should merge in the order they are mentioned in the table.
+
+|Repo |PR Title |State |
+|-----|---------|------|
+sonic-swss | [Add FEC frame loss ratio monitoring with predictive analytics](https://github.com/sonic-net/sonic-swss/pull/3869) | ![GitHub issue/pull request detail](https://img.shields.io/github/pulls/detail/state/sonic-net/sonic-swss/3869) |
+sonic-utilities | [Add FEC FLR statistics support to port counters](https://github.com/sonic-net/sonic-utilities/pull/4054) | ![GitHub issue/pull request detail](https://img.shields.io/github/pulls/detail/state/sonic-net/sonic-utilities/4054) |
+
 ## Table of Content
 - [Revision](#revision)
 - [Scope](#scope)
